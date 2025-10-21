@@ -20,6 +20,7 @@ module.exports = {
 		'import/extensions': 'off',
 		'import/no-unresolved': ['error', { 'ignore': ["\\?raw"] }],
 		'vue/no-v-model-argument': 'off',
-		'vue/no-v-html': 'off'
+		'vue/no-v-html': 'off',
+		'no-console': 'off'
 	}
 }

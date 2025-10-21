@@ -464,9 +464,9 @@ export default {
 			// this.messages is already the active session's history in order
 			// Only send the text turns that LLM needs
 			return (this.messages || [])
-				.filter((m) => m && m.content && (m.role === 'human' || m.role === 'assistant'))
-				.map((m) => ({
-					role: m.role === 'human' ? 'user' : 'assistant',
+				.filter(m => m && m.content && (m.role === Roles.HUMAN || m.role === Roles.ASSISTANT))
+				.map(m => ({
+					role: m.role === Roles.HUMAN ? 'user' : 'assistant',
 					content: m.content,
 				}))
 		},
@@ -478,17 +478,19 @@ export default {
 
 				const timestamp = Math.floor(Date.now() / 1000)
 				const assistant = {
-					role: 'assistant',
+					id: 'temp-' + timestamp,
+					role: Roles.ASSISTANT,
 					content: '',
 					timestamp,
 					session_id: sessionId,
 					attachments: [],
-					// id will be set after we persist
 				}
 				this.messages.push(assistant)
 				this.scrollToBottom()
 
-				this.streamingAbortController?.abort()
+				if (this.streamingAbortController != null) {
+					this.streamingAbortController.abort()
+				}
 				this.streamingAbortController = new AbortController()
 
 				const payload = {
@@ -535,6 +537,7 @@ export default {
 							const delta = json?.choices?.[0]?.delta?.content ?? ''
 							if (delta) {
 								assistant.content += delta
+								console.log(delta)
 							}
 						} catch {
 							// ignore keep-alives/comments
@@ -547,14 +550,13 @@ export default {
 				// Do NOT trigger another generation here
 				const saveResp = await axios.put(getChatURL('/new_message'), {
 					sessionId,
-					role: 'assistant',
+					role: Roles.ASSISTANT,
 					content: assistant.content,
 					attachments: null,
 					timestamp,
 					firstHumanMessage: false,
 				})
 
-				// replace placeholder with saved message (includes ID, may include sources, etc.)
 				const saved = saveResp.data
 				this.messages[this.messages.length - 1] = saved
 				this.scrollToBottom()
